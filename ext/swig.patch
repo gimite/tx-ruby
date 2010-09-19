@@ -1,0 +1,192 @@
+Index: Lib/ruby/rubycontainer.swg
+===================================================================
+--- Lib/ruby/rubycontainer.swg	(revision 11423)
++++ Lib/ruby/rubycontainer.swg	(working copy)
+@@ -446,11 +446,10 @@
+   %typemap(out,noblock=1,fragment="RubySequence_Cont")
+     std::pair<const_iterator, const_iterator> {
+     $result = rb_ary_new2(2);
+-    RARRAY_PTR($result)[0] = SWIG_NewPointerObj(swig::make_const_iterator(%static_cast($1,const $type &).first),
+-						swig::ConstIterator::descriptor(),SWIG_POINTER_OWN);
+-    RARRAY_PTR($result)[1] = SWIG_NewPointerObj(swig::make_const_iterator(%static_cast($1,const $type &).second),
+-						swig::ConstIterator::descriptor(),SWIG_POINTER_OWN);
+-    RARRAY_LEN($result) = 2;
++    rb_ary_push($result, SWIG_NewPointerObj(swig::make_const_iterator(%static_cast($1,const $type &).first), 
++	    swig::ConstIterator::descriptor(),SWIG_POINTER_OWN)); 
++    rb_ary_push($result, SWIG_NewPointerObj(swig::make_const_iterator(%static_cast($1,const $type &).second), 
++	    swig::ConstIterator::descriptor(),SWIG_POINTER_OWN)); 
+   }
+ 
+   // std::map/multimap/set allow returning std::pair< iterator, iterator > from
+@@ -459,11 +458,10 @@
+   %typemap(out,noblock=1,fragment="RubySequence_Cont")
+     std::pair<iterator, iterator> {
+     $result = rb_ary_new2(2);
+-    RARRAY_PTR($result)[0] = SWIG_NewPointerObj(swig::make_const_iterator(%static_cast($1,const $type &).first),
+-						swig::ConstIterator::descriptor(),SWIG_POINTER_OWN);
+-    RARRAY_PTR($result)[1] = SWIG_NewPointerObj(swig::make_const_iterator(%static_cast($1,const $type &).second),
+-						swig::ConstIterator::descriptor(),SWIG_POINTER_OWN);
+-    RARRAY_LEN($result) = 2;
++    rb_ary_push($result, SWIG_NewPointerObj(swig::make_const_iterator(%static_cast($1,const $type &).first), 
++	    swig::ConstIterator::descriptor(),SWIG_POINTER_OWN)); 
++    rb_ary_push($result, SWIG_NewPointerObj(swig::make_const_iterator(%static_cast($1,const $type &).second), 
++	    swig::ConstIterator::descriptor(),SWIG_POINTER_OWN)); 
+   }
+ 
+ 
+@@ -566,7 +564,8 @@
+     {
+       Sequence::const_iterator i = $self->begin();
+       Sequence::const_iterator e = $self->end();
+-      VALUE str = rb_str_new2( swig::type_name< Sequence >() );
++      // Double parentheses to avoid macro expansion error in case Sequence contains comma.
++      VALUE str = rb_str_new2(( swig::type_name< Sequence >() ));
+       str = rb_str_cat2( str, " [" );
+       bool comma = false;
+       VALUE tmp;
+@@ -1112,9 +1111,8 @@
+ 	int i = 0;
+ 	for (const_iterator it = seq.begin();
+ 	     it != seq.end(); ++it, ++i) {
+-	  RARRAY_PTR(obj)[i] = swig::from< value_type >(*it);
++	  rb_ary_push(obj, swig::from< value_type >(*it)); 
+ 	}
+-	RARRAY_LEN(obj) = size;
+ 	rb_obj_freeze(obj);  // treat as immutable result
+ 	return obj;
+       } else {
+Index: Lib/ruby/std_set.i
+===================================================================
+--- Lib/ruby/std_set.i	(revision 11423)
++++ Lib/ruby/std_set.i	(working copy)
+@@ -170,10 +170,9 @@
+   %typemap(out,noblock=1,fragment="RubyPairBoolOutputIterator")
+   std::pair<iterator, bool> {
+     $result = rb_ary_new2(2);
+-    RARRAY_PTR($result)[0] = SWIG_NewPointerObj(swig::make_set_nonconst_iterator(%static_cast($1,$type &).first),
+-						swig::Iterator::descriptor(),SWIG_POINTER_OWN);    
+-    RARRAY_PTR($result)[1] = SWIG_From(bool)(%static_cast($1,const $type &).second);
+-    RARRAY_LEN($result) = 2;
++    rb_ary_push($result, SWIG_NewPointerObj(swig::make_set_nonconst_iterator(%static_cast($1,$type &).first), 
++                                            swig::Iterator::descriptor(),SWIG_POINTER_OWN)); 
++    rb_ary_push($result, SWIG_From(bool)(%static_cast($1,const $type &).second)); 
+    }
+ 
+   %extend  {
+Index: Lib/ruby/std_multimap.i
+===================================================================
+--- Lib/ruby/std_multimap.i	(revision 11423)
++++ Lib/ruby/std_multimap.i	(working copy)
+@@ -115,7 +115,8 @@
+     {
+       MultiMap::iterator i = $self->begin();
+       MultiMap::iterator e = $self->end();
+-      VALUE str = rb_str_new2( swig::type_name< MultiMap >() );
++      // Double parentheses to avoid macro expansion error in case MultiMap contains comma.
++      VALUE str = rb_str_new2(( swig::type_name< MultiMap >() ));
+       str = rb_str_cat2( str, " {" );
+       VALUE tmp;
+       while ( i != e )
+Index: Lib/ruby/std_pair.i
+===================================================================
+--- Lib/ruby/std_pair.i	(revision 11423)
++++ Lib/ruby/std_pair.i	(working copy)
+@@ -118,11 +118,9 @@
+ 
+       static VALUE from(const std::pair<T,U>& val) {
+ 	VALUE obj = rb_ary_new2(2);
+-	RARRAY_PTR(obj)[0] = swig::from< 
+-	  typename swig::noconst_traits<T >::noconst_type>(val.first);
+-	RARRAY_PTR(obj)[1] = swig::from(val.second);
+-	RARRAY_LEN(obj) = 2;
+-	rb_define_singleton_method(obj, "second",  
++	rb_ary_push(obj, swig::from<typename swig::noconst_traits<T >::noconst_type>(val.first)); 
++	rb_ary_push(obj, swig::from(val.second)); 
++	rb_define_singleton_method(obj, "second", 
+ 				   VALUEFUNC(_wrap_pair_second), 0 );
+ 	rb_define_singleton_method(obj, "second=", 
+ 				   VALUEFUNC(_wrap_pair_second_eq), 1 );
+@@ -148,7 +146,8 @@
+   VALUE inspect() const
+     {
+       VALUE tmp;
+-      VALUE str = rb_str_new2( swig::type_name< pair >() );
++      // Double parentheses to avoid macro expansion error in case pair contains comma.
++      VALUE str = rb_str_new2(( swig::type_name< pair >() ));
+       str = rb_str_cat2( str, " (" );
+       tmp = swig::from( $self->first );
+       tmp = rb_obj_as_string( tmp );
+Index: Lib/ruby/rubyclasses.swg
+===================================================================
+--- Lib/ruby/rubyclasses.swg	(revision 11423)
++++ Lib/ruby/rubyclasses.swg	(working copy)
+@@ -315,30 +315,36 @@
+ 
+   };
+ 
+-  ID  GC_VALUE::hash_id = rb_intern("hash");
+-  ID  GC_VALUE::lt_id = rb_intern("<");
+-  ID  GC_VALUE::gt_id = rb_intern(">");
+-  ID  GC_VALUE::eq_id = rb_intern("==");
+-  ID  GC_VALUE::le_id = rb_intern("<=");
+-  ID  GC_VALUE::ge_id = rb_intern(">=");
++  // We need this because rb_intern macro uses statement-expression and
++  // statement-expression is allowed only inside functions.
++  static ID rb_intern_wrapper(const char* str) {
++    return rb_intern(str);
++  }
+ 
+-  ID  GC_VALUE::pos_id = rb_intern("+@");
+-  ID  GC_VALUE::neg_id = rb_intern("-@");
+-  ID  GC_VALUE::inv_id = rb_intern("~");
++  ID  GC_VALUE::hash_id = rb_intern_wrapper("hash");
++  ID  GC_VALUE::lt_id = rb_intern_wrapper("<");
++  ID  GC_VALUE::gt_id = rb_intern_wrapper(">");
++  ID  GC_VALUE::eq_id = rb_intern_wrapper("==");
++  ID  GC_VALUE::le_id = rb_intern_wrapper("<=");
++  ID  GC_VALUE::ge_id = rb_intern_wrapper(">=");
+ 
+-  ID  GC_VALUE::add_id = rb_intern("+");
+-  ID  GC_VALUE::sub_id = rb_intern("-");
+-  ID  GC_VALUE::mul_id = rb_intern("*");
+-  ID  GC_VALUE::div_id = rb_intern("/");
+-  ID  GC_VALUE::mod_id = rb_intern("%");
++  ID  GC_VALUE::pos_id = rb_intern_wrapper("+@");
++  ID  GC_VALUE::neg_id = rb_intern_wrapper("-@");
++  ID  GC_VALUE::inv_id = rb_intern_wrapper("~");
+ 
+-  ID  GC_VALUE::and_id = rb_intern("&");
+-  ID  GC_VALUE::or_id  = rb_intern("|");
+-  ID  GC_VALUE::xor_id = rb_intern("^");
++  ID  GC_VALUE::add_id = rb_intern_wrapper("+");
++  ID  GC_VALUE::sub_id = rb_intern_wrapper("-");
++  ID  GC_VALUE::mul_id = rb_intern_wrapper("*");
++  ID  GC_VALUE::div_id = rb_intern_wrapper("/");
++  ID  GC_VALUE::mod_id = rb_intern_wrapper("%");
+ 
+-  ID  GC_VALUE::lshift_id = rb_intern("<<");
+-  ID  GC_VALUE::rshift_id = rb_intern(">>");
++  ID  GC_VALUE::and_id = rb_intern_wrapper("&");
++  ID  GC_VALUE::or_id  = rb_intern_wrapper("|");
++  ID  GC_VALUE::xor_id = rb_intern_wrapper("^");
+ 
++  ID  GC_VALUE::lshift_id = rb_intern_wrapper("<<");
++  ID  GC_VALUE::rshift_id = rb_intern_wrapper(">>");
++
+   VALUE GC_VALUE::_hash = Qnil;
+ 
+   typedef GC_VALUE LANGUAGE_OBJ;
+Index: Lib/ruby/std_map.i
+===================================================================
+--- Lib/ruby/std_map.i	(revision 11423)
++++ Lib/ruby/std_map.i	(working copy)
+@@ -345,7 +345,8 @@
+     {
+       Map::const_iterator i = $self->begin();
+       Map::const_iterator e = $self->end();
+-      VALUE str = rb_str_new2( swig::type_name< Map >() );
++      // Double parentheses to avoid macro expansion error in case Map contains comma.
++      VALUE str = rb_str_new2(( swig::type_name< Map >() ));
+       str = rb_str_cat2( str, " {" );
+       bool comma = false;
+       VALUE tmp;

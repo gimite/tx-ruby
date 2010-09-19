@@ -1,0 +1,6 @@
+ssv.o: ssv.cpp ssv.hpp
+tx_core.o: tx.cpp tx.hpp ssv.hpp
+tx_swig.o: tx_swig.cpp tx_swig.h
+tx_swig_wrap.o: tx_swig_wrap.cxx tx_swig.h tx.hpp ssv.hpp
+tx_swig_wrap.cxx: tx_swig.i tx_swig.h
+	swig -c++ -ruby -initname tx_core tx_swig.i
